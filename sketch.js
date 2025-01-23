@@ -15,6 +15,45 @@ let fireDuration = 120; // Trvání ohně
 let scoreSound;
 let ohenImage;
 
+class Cyklista {
+    constructor(x, y, speed) {
+        this.x = x;
+        this.y = y;
+        this.speed = speed;
+    }
+
+    move() {
+        this.y += this.speed;
+    }
+
+    show() {
+        image(cyklozmrdImage, this.x, this.y, 50, 100);
+    }
+
+    isOffScreen() {
+        return this.y > height;
+    }
+
+    detectCollision(carX, carY) {
+        let carLeft = carX;
+        let carRight = carX + 100;
+        let carTop = carY;
+        let carBottom = carY + 200;
+
+        let objLeft = this.x;
+        let objRight = this.x + 50;
+        let objTop = this.y;
+        let objBottom = this.y + 100;
+
+        return (
+            carRight > objLeft &&
+            carLeft < objRight &&
+            carBottom > objTop &&
+            carTop < objBottom
+        );
+    }
+}
+
 function preload() {
     felina = loadImage(`felina.png`);
     cyklozmrdImage = loadImage(`cyklozmrd.png`);
@@ -44,7 +83,6 @@ function draw() {
     stredniCara += 5;
     if (stredniCara >= 80) stredniCara = 0;
 
-    // Pohyb auta
     let speed = 5;
     if (moveLeft) felinaX -= speed;
     if (moveRight) felinaX += speed;
@@ -55,11 +93,10 @@ function draw() {
         drawFireEffect();
         fireDuration--;
         if (fireDuration <= 0) {
-            fireEffect = false; // Deaktivace efektu po vypršení trvání
+            fireEffect = false; // Deaktivace efektu 
         }
     }
 
-    // Auto
     image(felina, felinaX, felinaY, 100, 200);
 
     if (frameCount % 60 === 0 && zliCyklisti.length < 2) {
@@ -67,10 +104,10 @@ function draw() {
     }
 
     for (let i = zliCyklisti.length - 1; i >= 0; i--) {
-        zliCyklisti[i].y += zliCyklisti[i].movementSpeed;
-        image(cyklozmrdImage, zliCyklisti[i].x, zliCyklisti[i].y, 50, 100);
+        zliCyklisti[i].move();
+        zliCyklisti[i].show();
 
-        if (detectCollision(zliCyklisti[i])) {
+        if (zliCyklisti[i].detectCollision(felinaX, felinaY)) {
             zliCyklisti.splice(i, 1);
             score += 1;
 
@@ -78,14 +115,13 @@ function draw() {
             if (score % 10 === 0) {
                 playScoreSound();
                 fireEffect = true;
-                fireDuration = 60; 
+                fireDuration = 60; // Reset trvání efektu ohně
             }
-        } else if (zliCyklisti[i].y > height) {
+        } else if (zliCyklisti[i].isOffScreen()) {
             zliCyklisti.splice(i, 1);
         }
     }
 
-    // Zobrazení skóre
     fill(255);
     textSize(24);
     text("    Score: " + score, 20, 40);
@@ -103,27 +139,8 @@ function keyReleased() {
 
 function spawnZlyCyklista() {
     let x = random(80, width - 130);
-    let movementSpeed = random(5, 10); 
-    zliCyklisti.push({ x: x, y: -50, movementSpeed: movementSpeed });
-}
-
-function detectCollision(cyklo) {
-    let carLeft = felinaX;
-    let carRight = felinaX + 100;
-    let carTop = felinaY;
-    let carBottom = felinaY + 200;
-
-    let objLeft = cyklo.x;
-    let objRight = cyklo.x + 50;
-    let objTop = cyklo.y;
-    let objBottom = cyklo.y + 100;
-
-    return (
-        carRight > objLeft &&
-        carLeft < objRight &&
-        carBottom > objTop &&
-        carTop < objBottom
-    );
+    let speed = random(5, 10);
+    zliCyklisti.push(new Cyklista(x, -50, speed));
 }
 
 function playScoreSound() {
